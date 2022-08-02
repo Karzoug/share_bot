@@ -3,49 +3,58 @@ package bot
 import (
 	"fmt"
 	"log"
-	"share_bot/db"
+	"share_bot/lib/e"
 	"share_bot/parse"
+	"share_bot/storage"
 	"strings"
 	"time"
 
 	"github.com/NicoNex/echotron/v3"
 )
 
-func addCommand(b *bot, update *echotron.Update) {
-	message := strings.TrimPrefix(update.Message.Text, "/add@"+usernameBot)
+func (b *bot) addCommand(update *echotron.Update) {
+	var err error
+	defer func() {
+		if err != nil {
+			log.Println(e.Wrap("can't do addCommand", err))
+		}
+	}()
+
+	message := strings.TrimPrefix(update.Message.Text, "/add@"+b.username)
 	message = strings.TrimPrefix(message, "/add")
 	if update.Message.Chat.Type != "private" {
 		resDel, _ := b.DeleteMessage(b.chatID, update.Message.ID)
 		if !resDel.Ok {
-			b.SendMessage("The bot should be able to delete user messages", b.chatID, nil)
+			b.SendMessage(needDeletePermissionMsg, b.chatID, nil)
 			return
 		}
 	}
 
-	resParse, comment, err := parse.AddMessage(message)
+	exps, comment, err := parse.AddMessage(message)
 	if err != nil {
-		log.Println(fmt.Errorf("add Command parse message error: %w", err))
 		return
 	}
-	lender := db.User{
-		Username:   update.Message.From.Username,
-		TelegramId: update.Message.From.ID,
-	}
-	req := db.Request{
+
+	req := storage.Request{
+		Lender:  update.Message.From.Username,
+		Exps:    exps,
 		Comment: comment,
-		ChatId:  update.Message.Chat.ID,
 		Date:    time.Unix(int64(update.Message.Date), 0),
+		ChatId:  update.Message.Chat.ID,
 	}
-	db.AddExpenses(lender, req, resParse)
+	err = b.storage.AddRequest(req)
+	if err != nil {
+		return
+	}
 
 	var bld strings.Builder
-	fmt.Fprintf(&bld, "%s сообщил о тратах «%s»\n\n", lender.Username, req.Comment)
-	for _, v := range resParse {
-		fmt.Fprintf(&bld, "%c @%s: %d %c \n", receiptCode, v.Borrower, v.Sum, rubleCode)
+	fmt.Fprintf(&bld, "%s сообщил о тратах «%s»\n\n", req.Lender, req.Comment)
+	for _, e := range req.Exps {
+		fmt.Fprintf(&bld, "🧾 @%s: %d ₽ \n", e.Person, e.Sum)
 	}
 
 	_, err = b.SendMessage(bld.String(), b.chatID, nil)
 	if err != nil {
-		log.Println(fmt.Errorf("add Command send message error: %w", err))
+		return
 	}
 }

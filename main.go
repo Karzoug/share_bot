@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"share_bot/bot"
-	"share_bot/db"
+	"share_bot/storage/db"
 
 	"github.com/mitchellh/go-homedir"
 )
@@ -17,18 +17,18 @@ const botUsernameEnv string = "SHARE_BOT_USERNAME"
 func main() {
 	home, _ := homedir.Dir()
 	dbPath := filepath.Join(home, dbFileName)
-	err, close := db.Init(dbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer close()
 
 	token, exists := os.LookupEnv(tokenEnv)
 	if !exists {
-		log.Fatal("Telegram token does not exist")
+		log.Fatal("telegram token does not exist")
 	}
 
 	username := os.Getenv(botUsernameEnv)
 
-	bot.Start(token, username)
+	storage, close := db.New(dbPath)
+	defer close()
+
+	dsp := bot.NewDispatcher(token, username, storage)
+	log.Println(dsp.Poll())
+
 }
