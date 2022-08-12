@@ -23,8 +23,8 @@ func AddMessage(message string) (exps []storage.Expense, comment string, e error
 			return nil, "", errors.New("parse sum error")
 		}
 		exps = append(exps, storage.Expense{
-			Person: strings.TrimPrefix(str[i][1], "@"),
-			Sum:    sum,
+			Borrower: strings.TrimPrefix(str[i][1], "@"),
+			Sum:      sum,
 		})
 	}
 

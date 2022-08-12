@@ -7,6 +7,7 @@ const createQuery string = `CREATE TABLE IF NOT EXISTS "expenses" (
 	"sum"	INTEGER DEFAULT 0,
 	"request_id"	INTEGER NOT NULL,
 	"returned"	INTEGER DEFAULT 0,
+	"approved"	INTEGER DEFAULT 0,
 	FOREIGN KEY("borrower_id") REFERENCES "users"("id"),
 	FOREIGN KEY("request_id") REFERENCES "requests"("id"),
 	FOREIGN KEY("lender_id") REFERENCES "users"("id"),

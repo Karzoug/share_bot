@@ -11,12 +11,11 @@ import (
 func (st Storage) SaveUser(user storage.User) {
 	st.mustOpenDb()
 
-	dbUser, exist := st.getUser(user.Username)
+	dbUser, exist := st.GetUserByUsername(user.Username)
 	if !exist {
-		st.addUser(&tableUser{
-			Username: user.Username,
-			ChatId:   user.ChatId,
-		})
+		dbUser.Username = user.Username
+		dbUser.ChatId = user.ChatId
+		st.addUser(&dbUser)
 		return
 	}
 
@@ -25,20 +24,45 @@ func (st Storage) SaveUser(user storage.User) {
 }
 
 // getUser tries to find user in database by username
-func (st Storage) getUser(username string) (dbUser tableUser, exist bool) {
+func (st Storage) GetUserByUsername(username string) (dbUser storage.User, exist bool) {
 	err := st.db.QueryRow("SELECT id, username, chat_id FROM users WHERE username = $1", username).Scan(&dbUser.Id, &dbUser.Username, &dbUser.ChatId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return tableUser{Username: username}, false
+			return storage.User{}, false
 		} else {
-			log.Panic(e.Wrap("can't get user", err))
+			log.Panic(e.Wrap("can't get user by username", err))
 		}
 	}
 
 	return dbUser, true
 }
 
-func (st Storage) addUser(u *tableUser) {
+func (st Storage) GetUserById(id int) (dbUser storage.User, exist bool) {
+	err := st.db.QueryRow("SELECT id, username, chat_id FROM users WHERE id = $1", id).Scan(&dbUser.Id, &dbUser.Username, &dbUser.ChatId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return storage.User{}, false
+		} else {
+			log.Panic(e.Wrap("can't get user by id", err))
+		}
+	}
+
+	return dbUser, true
+}
+
+func (st Storage) IsUserExist(username string) (exist bool) {
+	err := st.db.QueryRow("SELECT case when exists (SELECT NULL FROM users WHERE username = $1) then 1 else 0 end", username).Scan(&exist)
+	if err != nil {
+		exist = false
+		if err != sql.ErrNoRows {
+			log.Panic(e.Wrap("can't get is user exist", err))
+		}
+	}
+
+	return
+}
+
+func (st Storage) addUser(u *storage.User) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -58,11 +82,11 @@ func (st Storage) addUser(u *tableUser) {
 	if err != nil {
 		return
 	}
-	u.Id = int(lastId)
+	u.Id = lastId
 	return
 }
 
-func (st Storage) updateUser(u *tableUser) {
+func (st Storage) updateUser(u *storage.User) {
 	var err error
 	defer func() {
 		if err != nil {

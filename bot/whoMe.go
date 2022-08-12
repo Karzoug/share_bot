@@ -10,11 +10,11 @@ import (
 	"github.com/NicoNex/echotron/v3"
 )
 
-func (b *bot) toWhom(update *echotron.Update) {
+func (b *bot) whoMe(update *echotron.Update) {
 	var err error
 	defer func() {
 		if err != nil {
-			log.Println(e.Wrap("can't do to whom command", err))
+			log.Println(e.Wrap("can't do who me command", err))
 		}
 	}()
 
@@ -23,7 +23,7 @@ func (b *bot) toWhom(update *echotron.Update) {
 		return
 	}
 
-	req, err := b.storage.GetRequestsByBorrower(update.Message.From.Username, true)
+	req, err := b.storage.GetRequestsByLender(update.Message.From.Username, true)
 	if err != nil {
 		if err == storage.ErrUserNotExist {
 			b.SendMessage(somethingWrongTryToStartMsg, b.chatID, nil)
@@ -31,7 +31,7 @@ func (b *bot) toWhom(update *echotron.Update) {
 		return
 	}
 	if len(req) == 0 {
-		b.SendMessage(toWhomNoExpensesMsg, b.chatID, nil)
+		b.SendMessage(whoMeNoExpensesMsg, b.chatID, nil)
 		return
 	}
 
@@ -41,12 +41,16 @@ func (b *bot) toWhom(update *echotron.Update) {
 				InlineKeyboard: [][]echotron.InlineKeyboardButton{
 					{
 						{
-							Text:         returnExpenseButtonMsg,
-							CallbackData: fmt.Sprintf("return_expense:%d", ex.Id),
+							Text:         approveReturnExpenseButtonMsg,
+							CallbackData: fmt.Sprintf("approve_return_expense:%d", ex.Id),
 						},
 					}},
 			}
-			msg := fmt.Sprintf("@%s \n%s: %d ₽ %s \n", r.Lender, r.Date.Format("02.01.06"), ex.Sum, r.Comment)
+			msg := fmt.Sprintf("@%s \n%s: %d ₽ %s \n", ex.Borrower, r.Date.Format("02.01.06"), ex.Sum, r.Comment)
+
+			if !ex.Approved {
+				msg += "\n" + notApprovedMsg
+			}
 
 			_, err = b.SendMessage(msg, b.chatID, &echotron.MessageOptions{ReplyMarkup: kb})
 			if err != nil {
@@ -54,5 +58,4 @@ func (b *bot) toWhom(update *echotron.Update) {
 			}
 		}
 	}
-
 }

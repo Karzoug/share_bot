@@ -6,14 +6,20 @@ import (
 )
 
 type Storage interface {
-	AddRequest(req Request) error
-	ReturnExpense(lender, borrower string, sum int) error
+	AddRequest(req *Request) error
 	GetRequestsByBorrower(borrower string, onlyNotReturned bool) ([]Request, error)
 	GetRequestsByLender(lender string, onlyNotReturned bool) ([]Request, error)
+	GetExpenseWithRequest(expId int) (Request, error)
+	ApproveExpense(reqId int64, username string) error
+	ApproveReturnExpense(reqId int64, username string) error
+	GetUserByUsername(username string) (User, bool)
+	GetUserById(id int) (User, bool)
+	IsUserExist(username string) bool
 	SaveUser(user User)
 }
 
 type Request struct {
+	Id      int64
 	Lender  string
 	Exps    []Expense
 	Comment string
@@ -22,17 +28,20 @@ type Request struct {
 }
 
 type Expense struct {
-	// Borrower or Lender
-	Person string
-	Sum    int
+	Id       int64
+	Borrower string
+	Sum      int
+	Returned bool
+	Approved bool
 }
 
 type User struct {
+	Id       int64
 	Username string
 	ChatId   int64
 }
 
 var (
-	ErrUnknownMetaType = errors.New("unknown meta type")
-	ErrUserNotExist    = errors.New("user doesn't exist")
+	ErrUserNotExist = errors.New("user doesn't exist")
+	ErrNoResult     = errors.New("no data affected by command")
 )
