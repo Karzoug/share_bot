@@ -21,20 +21,27 @@ var keyboard = echotron.ReplyKeyboardMarkup{
 type bot struct {
 	chatID int64
 	echotron.API
-	username string
-	storage  storage.Storage
+	storage storage.Storage
 }
 
-func NewDispatcher(token string, username string, storage storage.Storage) *echotron.Dispatcher {
+func NewDispatcher(token string, storage storage.Storage) *echotron.Dispatcher {
 	newBotFn := func(chatID int64) echotron.Bot {
 		return &bot{
 			chatID,
 			echotron.NewAPI(token),
-			username,
 			storage,
 		}
 	}
 	return echotron.NewDispatcher(token, newBotFn)
+}
+
+func (b *bot) getUsername() (string, error) {
+	user, err := b.GetMe()
+	if err != nil {
+		return "", err
+	}
+
+	return user.Result.Username, nil
 }
 
 func (b *bot) Update(update *echotron.Update) {

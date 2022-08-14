@@ -21,7 +21,11 @@ func (b *bot) add(update *echotron.Update) {
 		}
 	}()
 
-	message := strings.TrimPrefix(update.Message.Text, "/add@"+b.username)
+	botName, err := b.getUsername()
+	if err != nil {
+		return
+	}
+	message := strings.TrimPrefix(update.Message.Text, "/add@"+botName)
 	message = strings.TrimPrefix(message, "/add")
 
 	resDel, _ := b.DeleteMessage(b.chatID, update.Message.ID)
@@ -41,7 +45,7 @@ func (b *bot) add(update *echotron.Update) {
 				{
 					{
 						Text: registerBotButtonMsg,
-						URL:  "https://t.me/" + b.username,
+						URL:  "https://t.me/" + botName,
 					},
 				}},
 		}

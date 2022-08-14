@@ -12,7 +12,6 @@ import (
 
 const dbFileName string = "share_bot.db"
 const tokenEnv string = "SHARE_BOT_TELEGRAM_TOKEN"
-const botUsernameEnv string = "SHARE_BOT_USERNAME"
 
 func main() {
 	home, _ := homedir.Dir()
@@ -22,13 +21,10 @@ func main() {
 	if !exists {
 		log.Fatal("telegram token does not exist")
 	}
-
-	username := os.Getenv(botUsernameEnv)
-
 	storage, close := db.New(dbPath)
 	defer close()
 
-	dsp := bot.NewDispatcher(token, username, storage)
+	dsp := bot.NewDispatcher(token, storage)
 	log.Println(dsp.Poll())
 
 }
