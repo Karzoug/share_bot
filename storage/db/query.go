@@ -25,4 +25,6 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"username"	TEXT NOT NULL UNIQUE,
 	"chat_id"	INTEGER,
 	PRIMARY KEY("id" AUTOINCREMENT)
-);`
+);
+CREATE INDEX expenses_not_returned_index ON expenses (borrower_id) WHERE returned = 0;
+CREATE INDEX users_username_index ON users (username);`
