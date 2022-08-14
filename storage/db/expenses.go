@@ -276,3 +276,56 @@ func (st Storage) GetRequestsByLender(lender string, onlyNotReturned bool) (exps
 	}
 	return exps, nil
 }
+
+func (st Storage) GetNotReturnedRequests() (exps []storage.Request, err error) {
+	st.mustOpenDb()
+
+	defer func() { err = e.Wrap("can't get not returned requests", err) }()
+
+	exps = make([]storage.Request, 0)
+
+	rows, err := st.db.Query(`SELECT expenses.id, expenses.sum, expenses.approved, requests.id, requests.comment, requests.date, bu.username, lu.username
+		FROM expenses 
+		JOIN requests ON expenses.request_id = requests.id 
+		JOIN users lu ON expenses.lender_id = lu.id
+		JOIN users bu ON expenses.borrower_id = bu.id
+		WHERE expenses.returned = 0
+		ORDER BY requests.id`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	var (
+		date      string
+		lastReqId int64           = -1
+		e         storage.Expense = storage.Expense{}
+		r         storage.Request = storage.Request{}
+		acc       storage.Request = storage.Request{}
+	)
+
+	for rows.Next() {
+		if err = rows.Scan(&e.Id, &e.Sum, &e.Approved, &r.Id, &r.Comment, &date, &e.Borrower, &r.Lender); err != nil {
+			return
+		}
+		r.Date, _ = time.Parse("2006-01-02 15:04:05 -0700 MST", date)
+
+		if r.Id != lastReqId {
+			if len(acc.Exps) != 0 {
+				exps = append(exps, acc)
+			}
+			lastReqId = r.Id
+			acc = r
+			acc.Exps = make([]storage.Expense, 0, 1)
+		}
+		acc.Exps = append(acc.Exps, e)
+	}
+	if len(acc.Exps) != 0 {
+		exps = append(exps, acc)
+	}
+
+	if err = rows.Err(); err != nil {
+		return
+	}
+	return exps, nil
+}

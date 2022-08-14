@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"share_bot/bot"
+	"share_bot/remind"
 	"share_bot/storage/db"
 
 	"github.com/mitchellh/go-homedir"
@@ -23,6 +24,10 @@ func main() {
 	}
 	storage, close := db.New(dbPath)
 	defer close()
+
+	remainder := remind.NewReminder(token, storage, 3)
+	stop := remainder.Start(18)
+	defer stop()
 
 	dsp := bot.NewDispatcher(token, storage)
 	log.Println(dsp.Poll())

@@ -9,6 +9,7 @@ type Storage interface {
 	AddRequest(req *Request) error
 	GetRequestsByBorrower(borrower string, onlyNotReturned bool) ([]Request, error)
 	GetRequestsByLender(lender string, onlyNotReturned bool) ([]Request, error)
+	GetNotReturnedRequests() ([]Request, error)
 	GetExpenseWithRequest(expId int) (Request, error)
 	ApproveExpense(reqId int64, username string) error
 	ApproveReturnExpense(reqId int64, username string) error
