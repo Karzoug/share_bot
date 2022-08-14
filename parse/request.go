@@ -11,7 +11,7 @@ import (
 // AddMessage parses add expense message from user
 func AddMessage(message string) (exps []storage.Expense, comment string, e error) {
 	message = strings.TrimSpace(message)
-	re := regexp.MustCompile(`(@[0-9a-z_]+) (\d+) ([^@]*)`)
+	re := regexp.MustCompile(`((?:@[0-9a-z_]+ )+)(\d+) ([^@]*)`)
 	str := re.FindAllStringSubmatch(message, -1)
 
 	sum := 0
@@ -22,10 +22,16 @@ func AddMessage(message string) (exps []storage.Expense, comment string, e error
 		if err != nil {
 			return nil, "", errors.New("parse sum error")
 		}
-		exps = append(exps, storage.Expense{
-			Borrower: strings.TrimPrefix(str[i][1], "@"),
-			Sum:      sum,
-		})
+		names := strings.Fields(str[i][1])
+		if len(names) > 1 {
+			sum /= len(names)
+		}
+		for _, v := range names {
+			exps = append(exps, storage.Expense{
+				Borrower: strings.TrimPrefix(v, "@"),
+				Sum:      sum,
+			})
+		}
 	}
 
 	if len(exps) > 0 {
