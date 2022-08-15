@@ -8,8 +8,12 @@ import (
 	"share_bot/storage/db"
 )
 
-const dbPath string = "data/db/share_bot.db"
-const tokenEnv string = "SHARE_BOT_TELEGRAM_TOKEN"
+const (
+	dbPath                string = "data/db/share_bot.db"
+	tokenEnv              string = "SHARE_BOT_TELEGRAM_TOKEN"
+	waitInDayBeforeRemind int    = 3
+	runReminderHour       int    = 18
+)
 
 func main() {
 	token, exists := os.LookupEnv(tokenEnv)
@@ -18,9 +22,8 @@ func main() {
 	}
 	storage, close := db.New(dbPath)
 	defer close()
-
-	remainder := remind.NewReminder(token, storage, 3)
-	stop := remainder.Start(18)
+	remainder := remind.NewReminder(token, storage, waitInDayBeforeRemind)
+	stop := remainder.Start(runReminderHour)
 	defer stop()
 
 	dsp := bot.NewDispatcher(token, storage)
