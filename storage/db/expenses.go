@@ -153,7 +153,7 @@ func (st Storage) GetRequestsByBorrower(borrower string, onlyNotReturned bool) (
 	defer rows.Close()
 
 	var (
-		date      string
+		date      int64
 		lastReqId int64           = -1
 		e         storage.Expense = storage.Expense{Borrower: dbBorrower.Username}
 		r         storage.Request = storage.Request{}
@@ -164,7 +164,7 @@ func (st Storage) GetRequestsByBorrower(borrower string, onlyNotReturned bool) (
 		if err = rows.Scan(&e.Id, &e.Sum, &r.Id, &r.Comment, &date, &r.Lender); err != nil {
 			return
 		}
-		r.Date, _ = time.Parse("2006-01-02 15:04:05 -0700 MST", date)
+		r.Date = time.Unix(date, 0)
 
 		if r.Id != lastReqId {
 			if len(acc.Exps) != 0 {
@@ -206,13 +206,13 @@ func (st Storage) GetExpenseWithRequest(expId int) (req storage.Request, err err
 	}
 	defer rows.Close()
 
-	var date string
+	var date int64
 
 	rows.Next()
 	if err = rows.Scan(&req.Exps[0].Id, &req.Exps[0].Sum, &req.Id, &req.Comment, &date, &req.Lender, &req.Exps[0].Borrower); err != nil {
 		return
 	}
-	req.Date, _ = time.Parse("2006-01-02 15:04:05 -0700 MST", date)
+	req.Date = time.Unix(date, 0)
 
 	if err = rows.Err(); err != nil {
 		return storage.Request{}, err
@@ -244,7 +244,7 @@ func (st Storage) GetRequestsByLender(lender string, onlyNotReturned bool) (exps
 	defer rows.Close()
 
 	var (
-		date      string
+		date      int64
 		lastReqId int64           = -1
 		e         storage.Expense = storage.Expense{}
 		r         storage.Request = storage.Request{Lender: dbLender.Username}
@@ -255,7 +255,7 @@ func (st Storage) GetRequestsByLender(lender string, onlyNotReturned bool) (exps
 		if err = rows.Scan(&e.Id, &e.Sum, &e.Approved, &r.Id, &r.Comment, &date, &e.Borrower); err != nil {
 			return
 		}
-		r.Date, _ = time.Parse("2006-01-02 15:04:05 -0700 MST", date)
+		r.Date = time.Unix(date, 0)
 
 		if r.Id != lastReqId {
 			if len(acc.Exps) != 0 {
@@ -297,7 +297,7 @@ func (st Storage) GetNotReturnedRequests() (exps []storage.Request, err error) {
 	defer rows.Close()
 
 	var (
-		date      string
+		date      int64
 		lastReqId int64           = -1
 		e         storage.Expense = storage.Expense{}
 		r         storage.Request = storage.Request{}
@@ -308,7 +308,7 @@ func (st Storage) GetNotReturnedRequests() (exps []storage.Request, err error) {
 		if err = rows.Scan(&e.Id, &e.Sum, &e.Approved, &r.Id, &r.Comment, &date, &e.Borrower, &r.Lender); err != nil {
 			return
 		}
-		r.Date, _ = time.Parse("2006-01-02 15:04:05 -0700 MST", date)
+		r.Date = time.Unix(date, 0)
 
 		if r.Id != lastReqId {
 			if len(acc.Exps) != 0 {

@@ -16,7 +16,7 @@ const createQuery string = `CREATE TABLE IF NOT EXISTS "expenses" (
 CREATE TABLE IF NOT EXISTS "requests" (
 	"id"	INTEGER,
 	"comment"	TEXT,
-	"date"	TEXT NOT NULL,
+	"date"	INTEGER NOT NULL,
 	"chat_id"	INTEGER,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
