@@ -3,7 +3,7 @@ package parse
 import (
 	"errors"
 	"regexp"
-	"share_bot/storage"
+	"share_bot/internal/storage"
 	"strconv"
 	"strings"
 )
@@ -11,7 +11,7 @@ import (
 // AddMessage parses add expense message from user
 func AddMessage(message string) (exps []storage.Expense, comment string, e error) {
 	message = strings.TrimSpace(message)
-	re := regexp.MustCompile(`((?:@[0-9a-z_]+ )+)(\d+) ([^@]*)`)
+	re := regexp.MustCompile(`((?:@[0-9a-zA-Z_]+ )+)(\d+) ([^@]*)`)
 	str := re.FindAllStringSubmatch(message, -1)
 
 	sum := 0

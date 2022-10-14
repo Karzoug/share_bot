@@ -2,7 +2,8 @@ package bot
 
 import (
 	"fmt"
-	"share_bot/storage"
+	"log"
+	"share_bot/internal/storage"
 	"strings"
 
 	"github.com/NicoNex/echotron/v3"
@@ -22,14 +23,16 @@ type bot struct {
 	chatID int64
 	echotron.API
 	storage storage.Storage
+	logger  *log.Logger
 }
 
-func NewDispatcher(token string, storage storage.Storage) *echotron.Dispatcher {
+func NewDispatcher(token string, storage storage.Storage, logger *log.Logger) *echotron.Dispatcher {
 	newBotFn := func(chatID int64) echotron.Bot {
 		return &bot{
 			chatID,
 			echotron.NewAPI(token),
 			storage,
+			logger,
 		}
 	}
 	return echotron.NewDispatcher(token, newBotFn)

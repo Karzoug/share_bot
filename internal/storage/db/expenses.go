@@ -1,8 +1,8 @@
 package db
 
 import (
-	"share_bot/lib/e"
-	"share_bot/storage"
+	"share_bot/internal/storage"
+	"share_bot/pkg/e"
 	"time"
 )
 

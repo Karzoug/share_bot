@@ -2,10 +2,9 @@ package bot
 
 import (
 	"fmt"
-	"log"
-	"share_bot/lib/e"
-	"share_bot/parse"
-	"share_bot/storage"
+	"share_bot/internal/parse"
+	"share_bot/internal/storage"
+	"share_bot/pkg/e"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +16,7 @@ func (b *bot) add(update *echotron.Update) {
 	var err error
 	defer func() {
 		if err != nil {
-			log.Println(e.Wrap("can't do add command", err))
+			b.logger.Println(e.Wrap("can't do add command", err))
 		}
 	}()
 
@@ -105,7 +104,7 @@ func (b *bot) approveRequest(update *echotron.Update) {
 	defer func() {
 		err = e.Wrap("can't do command approve request", err)
 		if err != nil {
-			log.Println(err)
+			b.logger.Println(err)
 			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 				Text: somethingWrongMsg,
 			})

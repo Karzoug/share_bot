@@ -3,23 +3,24 @@ package db
 import (
 	"database/sql"
 	"log"
-	"share_bot/lib/e"
+	"share_bot/pkg/e"
 
 	_ "modernc.org/sqlite"
 )
 
 type Storage struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *log.Logger
 }
 
 // New creates Storage instance, opens db, creates tables if not exists and returns close function
-func New(dbPath string) (st Storage, closeFn func()) {
+func New(dbPath string, logger *log.Logger) (st Storage, closeFn func()) {
 	st = Storage{}
 
 	var err error
 	defer func() {
 		if err != nil {
-			log.Fatal(e.Wrap("can't create new db storage", err))
+			logger.Panic(e.Wrap("can't create new db storage", err))
 		}
 	}()
 
@@ -31,7 +32,7 @@ func New(dbPath string) (st Storage, closeFn func()) {
 	closeFn = func() {
 		err := st.db.Close()
 		if err != nil {
-			log.Print(e.Wrap("close db error", err))
+			logger.Print(e.Wrap("close db error", err))
 		}
 	}
 
@@ -61,6 +62,6 @@ func New(dbPath string) (st Storage, closeFn func()) {
 
 func (st Storage) mustOpenDb() {
 	if st.db == nil {
-		log.Panic("db connection doesn't open")
+		st.logger.Panic("db connection doesn't open")
 	}
 }

@@ -2,9 +2,8 @@ package bot
 
 import (
 	"fmt"
-	"log"
-	"share_bot/lib/e"
-	"share_bot/storage"
+	"share_bot/internal/storage"
+	"share_bot/pkg/e"
 	"strconv"
 	"strings"
 
@@ -16,7 +15,7 @@ func (b *bot) returnExpense(update *echotron.Update) {
 	defer func() {
 		err = e.Wrap("can't do command return expense", err)
 		if err != nil {
-			log.Println(err)
+			b.logger.Println(err)
 			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 				Text: somethingWrongMsg,
 			})
@@ -71,7 +70,7 @@ func (b *bot) approveReturnExpense(update *echotron.Update) {
 	defer func() {
 		err = e.Wrap("can't do command approve return expense", err)
 		if err != nil {
-			log.Println(err)
+			b.logger.Println(err)
 			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 				Text: somethingWrongMsg,
 			})

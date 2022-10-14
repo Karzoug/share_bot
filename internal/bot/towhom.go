@@ -3,9 +3,8 @@ package bot
 import (
 	"errors"
 	"fmt"
-	"log"
-	"share_bot/lib/e"
-	"share_bot/storage"
+	"share_bot/internal/storage"
+	"share_bot/pkg/e"
 
 	"github.com/NicoNex/echotron/v3"
 )
@@ -14,7 +13,7 @@ func (b *bot) toWhom(update *echotron.Update) {
 	var err error
 	defer func() {
 		if err != nil {
-			log.Println(e.Wrap("can't do to whom command", err))
+			b.logger.Println(e.Wrap("can't do to whom command", err))
 		}
 	}()
 

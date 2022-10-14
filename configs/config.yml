@@ -1,0 +1,13 @@
+database:
+  path: data/db/
+  filename: share_bot.db
+
+log:
+  path: ./
+  filename: log.txt
+
+reminder:
+  waitInDay: 3
+  runHour: 18
+  
+restartDurationSeconds: 5

@@ -3,8 +3,8 @@ package remind
 import (
 	"fmt"
 	"log"
-	"share_bot/lib/e"
-	"share_bot/storage"
+	"share_bot/internal/storage"
+	"share_bot/pkg/e"
 	"strconv"
 	"time"
 
@@ -15,16 +15,18 @@ import (
 type Reminder struct {
 	api               echotron.API
 	storage           storage.Storage
+	logger            *log.Logger
 	waitDurationInDay int
 }
 
-func NewReminder(token string, storage storage.Storage, waitInDay int) *Reminder {
+func NewReminder(token string, storage storage.Storage, logger *log.Logger, waitInDay int) *Reminder {
 	if waitInDay < 1 {
 		waitInDay = 1
 	}
 	return &Reminder{
 		echotron.NewAPI(token),
 		storage,
+		logger,
 		waitInDay,
 	}
 }
@@ -42,7 +44,7 @@ func (r *Reminder) work() {
 	reqs, err := r.storage.GetNotReturnedRequests()
 	if err != nil {
 		err = e.Wrap("can't work remainder", err)
-		log.Println(err)
+		r.logger.Println(err)
 		return
 	}
 
