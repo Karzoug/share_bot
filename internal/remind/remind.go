@@ -49,7 +49,7 @@ func (r *Reminder) work() {
 	}
 
 	for _, req := range reqs {
-		if diff := time.Now().Sub(req.Date); int(diff.Hours())%(24*r.waitDurationInDay) > 24 {
+		if diff := time.Since(req.Date); int(diff.Hours())%(24*r.waitDurationInDay) > 24 || int(diff.Hours())/(24*r.waitDurationInDay) == 0 {
 			continue
 		}
 		for _, exp := range req.Exps {
