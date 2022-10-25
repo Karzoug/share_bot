@@ -4,7 +4,7 @@ database:
 
 log:
   path: ./
-  filename: log.txt
+  filename: share.log
 
 reminder:
   waitInDay: 3
