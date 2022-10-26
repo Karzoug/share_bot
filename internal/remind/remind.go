@@ -65,6 +65,23 @@ func (r *Reminder) Work(ctx context.Context) {
 				if !exist {
 					continue
 				}
+
+				if borr.ChatId == 0 {
+					lend, exist, err := r.storage.GetUserByUsername(req.Lender)
+					if err != nil {
+						logger.Logger.Error("reminder: can't process request: storage error", zap.Error(err))
+						continue
+					}
+					if !exist {
+						continue
+					}
+					r.api.SendMessage(
+						fmt.Sprintf(remindToLenderBorrowerNotRegistered, exp.Borrower, exp.Sum, req.Comment),
+						lend.ChatId,
+						nil,
+					)
+					continue
+				}
 				r.api.SendMessage(
 					fmt.Sprintf(remindToBorrower, req.Lender, exp.Sum, req.Comment),
 					borr.ChatId,
@@ -80,7 +97,7 @@ func (r *Reminder) Work(ctx context.Context) {
 					continue
 				}
 				r.api.SendMessage(
-					fmt.Sprintf(remindToLender, exp.Borrower, exp.Sum, req.Comment),
+					fmt.Sprintf(remindToLenderSumNotApproved, exp.Borrower, exp.Sum, req.Comment),
 					lend.ChatId,
 					nil,
 				)
