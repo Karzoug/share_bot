@@ -1,55 +1,49 @@
 package remind
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"share_bot/internal/config"
+	"share_bot/internal/logger"
 	"share_bot/internal/storage"
-	"share_bot/pkg/e"
-	"strconv"
 	"time"
 
 	"github.com/NicoNex/echotron/v3"
-	"github.com/robfig/cron"
+	"go.uber.org/zap"
 )
 
 type Reminder struct {
-	api               echotron.API
-	storage           storage.Storage
-	logger            *log.Logger
-	waitDurationInDay int
+	api     echotron.API
+	storage storage.Storage
+	config  config.Reminder
 }
 
-func NewReminder(token string, storage storage.Storage, logger *log.Logger, waitInDay int) *Reminder {
-	if waitInDay < 1 {
-		waitInDay = 1
+func New(token string, storage storage.Storage, cfg config.Reminder) *Reminder {
+	if token == "" {
+		logger.Logger.Fatal("telegram token does not exist")
+	}
+	if cfg.WaitInDays < 1 {
+		cfg.WaitInDays = 1
 	}
 	return &Reminder{
 		echotron.NewAPI(token),
 		storage,
-		logger,
-		waitInDay,
+		cfg,
 	}
 }
 
-func (r *Reminder) Start(runHour int) (stop func()) {
-	c := cron.New()
-	c.AddFunc("0 0 "+strconv.Itoa(runHour)+" * * *", func() {
-		r.work()
-	})
-	c.Start()
-	return func() { c.Stop() }
-}
-
-func (r *Reminder) work() {
+func (r *Reminder) Work(ctx context.Context) {
+	if time.Now().Hour() != r.config.RunHour {
+		return
+	}
 	reqs, err := r.storage.GetNotReturnedRequests()
 	if err != nil {
-		err = e.Wrap("can't work remainder", err)
-		r.logger.Println(err)
+		logger.Logger.Info("can't work reminder: storage not returned requests", zap.Error(err))
 		return
 	}
 
 	for _, req := range reqs {
-		if diff := time.Since(req.Date); int(diff.Hours())%(24*r.waitDurationInDay) > 24 || int(diff.Hours())/(24*r.waitDurationInDay) == 0 {
+		if diff := time.Since(req.Date); int(diff.Hours())%(24*r.config.WaitInDays) > 24 || int(diff.Hours())/(24*r.config.WaitInDays) == 0 {
 			continue
 		}
 		for _, exp := range req.Exps {
@@ -63,7 +57,11 @@ func (r *Reminder) work() {
 							},
 						}},
 				}
-				borr, exist := r.storage.GetUserByUsername(exp.Borrower)
+				borr, exist, err := r.storage.GetUserByUsername(exp.Borrower)
+				if err != nil {
+					logger.Logger.Error("reminder: can't process request: storage error", zap.Error(err))
+					continue
+				}
 				if !exist {
 					continue
 				}
@@ -73,7 +71,11 @@ func (r *Reminder) work() {
 					&echotron.MessageOptions{ReplyMarkup: kb},
 				)
 			} else {
-				lend, exist := r.storage.GetUserByUsername(req.Lender)
+				lend, exist, err := r.storage.GetUserByUsername(req.Lender)
+				if err != nil {
+					logger.Logger.Error("reminder: can't process request: storage error", zap.Error(err))
+					continue
+				}
 				if !exist {
 					continue
 				}

@@ -13,10 +13,10 @@ type Storage interface {
 	GetExpenseWithRequest(expId int) (Request, error)
 	ApproveExpense(reqId int64, username string) error
 	ApproveReturnExpense(reqId int64, username string) error
-	GetUserByUsername(username string) (User, bool)
-	GetUserById(id int) (User, bool)
-	IsUserExist(username string) bool
-	SaveUser(user User)
+	GetUserByUsername(username string) (User, bool, error)
+	GetUserById(id int) (User, bool, error)
+	IsUserExist(username string) (bool, error)
+	SaveUser(user User) (err error)
 }
 
 type Request struct {

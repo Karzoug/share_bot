@@ -2,20 +2,20 @@ package bot
 
 import (
 	"fmt"
+	"share_bot/internal/logger"
 	"share_bot/internal/storage"
-	"share_bot/pkg/e"
 	"strconv"
 	"strings"
 
 	"github.com/NicoNex/echotron/v3"
+	"go.uber.org/zap"
 )
 
 func (b *bot) returnExpense(update *echotron.Update) {
 	var err error
 	defer func() {
-		err = e.Wrap("can't do command return expense", err)
 		if err != nil {
-			b.logger.Println(err)
+			logger.Logger.Error("can't do command return expense", zap.Error(err))
 			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 				Text: somethingWrongMsg,
 			})
@@ -31,7 +31,10 @@ func (b *bot) returnExpense(update *echotron.Update) {
 	if err != nil {
 		return
 	}
-	borr, exist := b.storage.GetUserByUsername(req.Lender)
+	borr, exist, err := b.storage.GetUserByUsername(req.Lender)
+	if err != nil {
+		return
+	}
 	if !exist {
 		err = storage.ErrUserNotExist
 		return
@@ -68,9 +71,8 @@ func (b *bot) returnExpense(update *echotron.Update) {
 func (b *bot) approveReturnExpense(update *echotron.Update) {
 	var err error
 	defer func() {
-		err = e.Wrap("can't do command approve return expense", err)
 		if err != nil {
-			b.logger.Println(err)
+			logger.Logger.Error("can't do command approve return expense", zap.Error(err))
 			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 				Text: somethingWrongMsg,
 			})

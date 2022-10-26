@@ -3,17 +3,18 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"share_bot/internal/logger"
 	"share_bot/internal/storage"
-	"share_bot/pkg/e"
 
 	"github.com/NicoNex/echotron/v3"
+	"go.uber.org/zap"
 )
 
 func (b *bot) toWhom(update *echotron.Update) {
 	var err error
 	defer func() {
 		if err != nil {
-			b.logger.Println(e.Wrap("can't do to whom command", err))
+			logger.Logger.Error("can't do to whom command", zap.Error(err))
 		}
 	}()
 

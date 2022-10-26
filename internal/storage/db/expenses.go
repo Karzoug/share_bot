@@ -15,7 +15,10 @@ func (st Storage) AddRequest(req *storage.Request) (err error) {
 
 	defer func() { err = e.Wrap("can't add request", err) }()
 
-	lender, exist := st.GetUserByUsername(req.Lender)
+	lender, exist, err := st.GetUserByUsername(req.Lender)
+	if err != nil {
+		return
+	}
 	if !exist {
 		lender.Username = req.Lender
 		st.addUser(&lender)
@@ -24,7 +27,10 @@ func (st Storage) AddRequest(req *storage.Request) (err error) {
 	borrIds := make(map[string]int64, len(req.Exps))
 
 	for _, v := range req.Exps {
-		borrower, exist := st.GetUserByUsername(v.Borrower)
+		borrower, exist, err := st.GetUserByUsername(v.Borrower)
+		if err != nil {
+			return err
+		}
 		if !exist {
 			borrower.Username = v.Borrower
 			st.addUser(&borrower)
@@ -70,9 +76,13 @@ func (st Storage) AddRequest(req *storage.Request) (err error) {
 }
 
 func (st Storage) ApproveExpense(reqId int64, borrowerUsername string) (err error) {
+	st.mustOpenDb()
 	defer func() { err = e.Wrap("can't approve expense", err) }()
 
-	user, exist := st.GetUserByUsername(borrowerUsername)
+	user, exist, err := st.GetUserByUsername(borrowerUsername)
+	if err != nil {
+		return
+	}
 	if !exist {
 		err = storage.ErrUserNotExist
 		return
@@ -98,9 +108,13 @@ func (st Storage) ApproveExpense(reqId int64, borrowerUsername string) (err erro
 }
 
 func (st Storage) ApproveReturnExpense(expId int64, lenderUsername string) (err error) {
+	st.mustOpenDb()
 	defer func() { err = e.Wrap("can't approve return expense", err) }()
 
-	user, exist := st.GetUserByUsername(lenderUsername)
+	user, exist, err := st.GetUserByUsername(lenderUsername)
+	if err != nil {
+		return
+	}
 	if !exist {
 		err = storage.ErrUserNotExist
 		return
@@ -125,10 +139,6 @@ func (st Storage) ApproveReturnExpense(expId int64, lenderUsername string) (err 
 	return
 }
 
-func (st Storage) ReturnExpense(lender, borrower string, sum int) error {
-	return nil
-}
-
 func (st Storage) GetRequestsByBorrower(borrower string, onlyNotReturned bool) (exps []storage.Request, err error) {
 	st.mustOpenDb()
 
@@ -136,7 +146,10 @@ func (st Storage) GetRequestsByBorrower(borrower string, onlyNotReturned bool) (
 
 	exps = make([]storage.Request, 0)
 
-	dbBorrower, exist := st.GetUserByUsername(borrower)
+	dbBorrower, exist, err := st.GetUserByUsername(borrower)
+	if err != nil {
+		return
+	}
 	if !exist {
 		return exps, storage.ErrUserNotExist
 	}
@@ -227,7 +240,10 @@ func (st Storage) GetRequestsByLender(lender string, onlyNotReturned bool) (exps
 
 	exps = make([]storage.Request, 0)
 
-	dbLender, exist := st.GetUserByUsername(lender)
+	dbLender, exist, err := st.GetUserByUsername(lender)
+	if err != nil {
+		return
+	}
 	if !exist {
 		return exps, storage.ErrUserNotExist
 	}

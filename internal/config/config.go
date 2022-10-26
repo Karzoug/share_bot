@@ -1,18 +1,12 @@
 package config
 
 type Config struct {
-	Database struct {
-		Path     string `yaml:"path" env-default:"data/db/"`
-		Filename string `yaml:"filename" env-default:"share_bot.db"`
-	} `yaml:"database"`
-	Log struct {
-		Path     string `yaml:"path" env-default:"./"`
-		Filename string `yaml:"filename" env-default:"log.txt"`
-	} `yaml:"log"`
-	Reminder struct {
-		WaitInDay int `yaml:"waitInDay" env-default:"3"`
-		RunHour   int `yaml:"runHour" env-default:"18"`
-	} `yaml:"reminder"`
+	Reminder               `yaml:"reminder"`
 	Token                  string `env:"SHARE_BOT_TELEGRAM_TOKEN"`
-	RestartDurationSeconds int    `yaml:"restartDurationSeconds" env-default:"5"`
+	RestartDurationSeconds int    `env:"SHARE_BOT_RESTART_DURATION_SECONDS" yaml:"restartDurationSeconds" env-default:"5"`
+}
+
+type Reminder struct {
+	WaitInDays int `env:"SHARE_BOT_WAIT_IN_DAYS" yaml:"waitInDays" env-default:"3"`
+	RunHour    int `env:"SHARE_BOT_RUN_HOUR" yaml:"runHour" env-default:"18"`
 }

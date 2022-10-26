@@ -2,21 +2,25 @@ package bot
 
 import (
 	"fmt"
+	"share_bot/internal/logger"
 	"share_bot/internal/parse"
 	"share_bot/internal/storage"
-	"share_bot/pkg/e"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/NicoNex/echotron/v3"
+	"go.uber.org/zap"
 )
 
 func (b *bot) add(update *echotron.Update) {
 	var err error
 	defer func() {
 		if err != nil {
-			b.logger.Println(e.Wrap("can't do add command", err))
+			logger.Logger.Error("can't do add command", zap.Error(err))
+			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
+				Text: somethingWrongMsg,
+			})
 		}
 	}()
 
@@ -33,23 +37,26 @@ func (b *bot) add(update *echotron.Update) {
 			b.SendMessage(needDeletePermissionMsg, b.chatID, nil)
 			return
 		}
-
-		u := update.Message.From.FirstName
-		if u == "" {
-			u = update.Message.From.Username
+		var exist bool
+		exist, err = b.storage.IsUserExist(update.Message.From.Username)
+		if err != nil {
+			return
 		}
+		if !exist {
+			u := update.Message.From.FirstName
+			if u == "" {
+				u = update.Message.From.Username
+			}
 
-		kb := echotron.InlineKeyboardMarkup{
-			InlineKeyboard: [][]echotron.InlineKeyboardButton{
-				{
+			kb := echotron.InlineKeyboardMarkup{
+				InlineKeyboard: [][]echotron.InlineKeyboardButton{
 					{
-						Text: registerBotButtonMsg,
-						URL:  "https://t.me/" + botName,
-					},
-				}},
-		}
-
-		if !b.storage.IsUserExist(update.Message.From.Username) {
+						{
+							Text: registerBotButtonMsg,
+							URL:  "https://t.me/" + botName,
+						},
+					}},
+			}
 			b.SendMessage(fmt.Sprintf(needToRegisterMsg, u), b.chatID, &echotron.MessageOptions{ReplyMarkup: kb})
 			return
 		}
@@ -60,6 +67,9 @@ func (b *bot) add(update *echotron.Update) {
 		return
 	}
 	if len(exps) == 0 {
+		b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
+			Text: wrongAddMsg,
+		})
 		return
 	}
 
@@ -76,12 +86,6 @@ func (b *bot) add(update *echotron.Update) {
 		return
 	}
 
-	var bld strings.Builder
-	fmt.Fprintf(&bld, addMsg+"\n\n", req.Lender, req.Comment)
-	for _, e := range req.Exps {
-		fmt.Fprintf(&bld, "🧾 @%s: %d ₽ \n", e.Borrower, e.Sum)
-	}
-
 	var inlineKeyboard = echotron.InlineKeyboardMarkup{
 		InlineKeyboard: [][]echotron.InlineKeyboardButton{
 			{
@@ -93,18 +97,44 @@ func (b *bot) add(update *echotron.Update) {
 		},
 	}
 
-	_, err = b.SendMessage(bld.String(), b.chatID, &echotron.MessageOptions{ReplyMarkup: inlineKeyboard})
-	if err != nil {
-		return
+	if update.Message.Chat.Type == "private" {
+		for _, e := range req.Exps {
+			var bld strings.Builder
+			if user, exist, err := b.storage.GetUserByUsername(e.Borrower); exist && user.ChatId != 0 && err == nil {
+				fmt.Fprintf(&bld, addMsg+"\n\n", req.Lender, req.Comment)
+				fmt.Fprintf(&bld, "🧾 @%s: %d ₽ \n", e.Borrower, e.Sum)
+				_, err = b.SendMessage(bld.String(), user.ChatId, &echotron.MessageOptions{ReplyMarkup: inlineKeyboard})
+				if err != nil {
+					return
+				}
+				_, err = b.SendMessage(fmt.Sprintf(sendAproveBorrowerFromPrivateChatMsg, user.Username), b.chatID, nil)
+			} else if err != nil {
+				fmt.Fprintf(&bld, "🧾 @%s: %d ₽ «%s»", e.Borrower, e.Sum, req.Comment)
+				fmt.Fprint(&bld, "\n\n"+mentionedUserNotRegistered)
+				_, err = b.SendMessage(bld.String(), b.chatID, nil)
+			} else {
+				return
+			}
+		}
+	} else {
+		var bld strings.Builder
+		fmt.Fprintf(&bld, addMsg+"\n\n", req.Lender, req.Comment)
+		for _, e := range req.Exps {
+			fmt.Fprintf(&bld, "🧾 @%s: %d ₽ \n", e.Borrower, e.Sum)
+		}
+
+		_, err = b.SendMessage(bld.String(), b.chatID, &echotron.MessageOptions{ReplyMarkup: inlineKeyboard})
+		if err != nil {
+			return
+		}
 	}
 }
 
 func (b *bot) approveRequest(update *echotron.Update) {
 	var err error
 	defer func() {
-		err = e.Wrap("can't do command approve request", err)
 		if err != nil {
-			b.logger.Println(err)
+			logger.Logger.Error("can't do command approve request", zap.Error(err))
 			b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 				Text: somethingWrongMsg,
 			})
@@ -122,4 +152,10 @@ func (b *bot) approveRequest(update *echotron.Update) {
 	b.API.AnswerCallbackQuery(update.CallbackQuery.ID, &echotron.CallbackQueryOptions{
 		Text: approveExpenseMsg,
 	})
+	_, err = b.API.EditMessageReplyMarkup(
+		echotron.NewMessageID(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.ID),
+		&echotron.MessageReplyMarkup{})
+	if err != nil {
+		return
+	}
 }

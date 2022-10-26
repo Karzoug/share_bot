@@ -3,17 +3,18 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"share_bot/internal/logger"
 	"share_bot/internal/storage"
-	"share_bot/pkg/e"
 
 	"github.com/NicoNex/echotron/v3"
+	"go.uber.org/zap"
 )
 
 func (b *bot) whoMe(update *echotron.Update) {
 	var err error
 	defer func() {
 		if err != nil {
-			b.logger.Println(e.Wrap("can't do who me command", err))
+			logger.Logger.Error("can't do who me command", zap.Error(err))
 		}
 	}()
 

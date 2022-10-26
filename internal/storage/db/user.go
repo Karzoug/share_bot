@@ -7,65 +7,61 @@ import (
 )
 
 // SaveUser calls on start bot-user interaction in private chat
-func (st Storage) SaveUser(user storage.User) {
-	st.mustOpenDb()
-
-	dbUser, exist := st.GetUserByUsername(user.Username)
+func (st Storage) SaveUser(user storage.User) (err error) {
+	dbUser, exist, err := st.GetUserByUsername(user.Username)
+	if err != nil {
+		return
+	}
 	if !exist {
 		dbUser.Username = user.Username
 		dbUser.ChatId = user.ChatId
-		st.addUser(&dbUser)
-		return
+		return st.addUser(&dbUser)
 	}
-
 	dbUser.ChatId = user.ChatId
-	st.updateUser(&dbUser)
+	return st.updateUser(&dbUser)
 }
 
 // getUser tries to find user in database by username
-func (st Storage) GetUserByUsername(username string) (dbUser storage.User, exist bool) {
-	err := st.db.QueryRow("SELECT id, username, chat_id FROM users WHERE username = $1", username).Scan(&dbUser.Id, &dbUser.Username, &dbUser.ChatId)
+func (st Storage) GetUserByUsername(username string) (dbUser storage.User, exist bool, err error) {
+	st.mustOpenDb()
+	err = st.db.QueryRow("SELECT id, username, chat_id FROM users WHERE username = $1", username).Scan(&dbUser.Id, &dbUser.Username, &dbUser.ChatId)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return storage.User{}, false
-		} else {
-			st.logger.Panic(e.Wrap("can't get user by username", err))
-		}
-	}
-
-	return dbUser, true
-}
-
-func (st Storage) GetUserById(id int) (dbUser storage.User, exist bool) {
-	err := st.db.QueryRow("SELECT id, username, chat_id FROM users WHERE id = $1", id).Scan(&dbUser.Id, &dbUser.Username, &dbUser.ChatId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return storage.User{}, false
-		} else {
-			st.logger.Panic(e.Wrap("can't get user by id", err))
-		}
-	}
-
-	return dbUser, true
-}
-
-func (st Storage) IsUserExist(username string) (exist bool) {
-	err := st.db.QueryRow("SELECT case when exists (SELECT NULL FROM users WHERE username = $1) then 1 else 0 end", username).Scan(&exist)
-	if err != nil {
-		exist = false
 		if err != sql.ErrNoRows {
-			st.logger.Panic(e.Wrap("can't get is user exist", err))
+			return storage.User{}, false, e.Wrap("can't get user by username", err)
 		}
+		return storage.User{}, false, nil
 	}
+	return dbUser, true, nil
+}
 
+func (st Storage) GetUserById(id int) (dbUser storage.User, exist bool, err error) {
+	st.mustOpenDb()
+	err = st.db.QueryRow("SELECT id, username, chat_id FROM users WHERE id = $1", id).Scan(&dbUser.Id, &dbUser.Username, &dbUser.ChatId)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return storage.User{}, false, e.Wrap("can't get user by id", err)
+		}
+		return storage.User{}, false, nil
+	}
+	return dbUser, true, nil
+}
+
+func (st Storage) IsUserExist(username string) (exist bool, err error) {
+	err = st.db.QueryRow("SELECT case when exists (SELECT NULL FROM users WHERE username = $1) then 1 else 0 end", username).Scan(&exist)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return false, e.Wrap("can't get is user exist", err)
+		}
+		return false, nil
+	}
 	return
 }
 
-func (st Storage) addUser(u *storage.User) {
-	var err error
+func (st Storage) addUser(u *storage.User) (err error) {
+	st.mustOpenDb()
 	defer func() {
 		if err != nil {
-			st.logger.Panic(e.Wrap("can't add user", err))
+			err = e.Wrap("can't add user", err)
 		}
 	}()
 
@@ -85,11 +81,11 @@ func (st Storage) addUser(u *storage.User) {
 	return
 }
 
-func (st Storage) updateUser(u *storage.User) {
-	var err error
+func (st Storage) updateUser(u *storage.User) (err error) {
+	st.mustOpenDb()
 	defer func() {
 		if err != nil {
-			st.logger.Panic(e.Wrap("can't update user", err))
+			err = e.Wrap("can't update user", err)
 		}
 	}()
 
@@ -101,4 +97,5 @@ func (st Storage) updateUser(u *storage.User) {
 	if err != nil {
 		return
 	}
+	return
 }

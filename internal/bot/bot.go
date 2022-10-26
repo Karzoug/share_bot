@@ -2,7 +2,7 @@ package bot
 
 import (
 	"fmt"
-	"log"
+	"share_bot/internal/logger"
 	"share_bot/internal/storage"
 	"strings"
 
@@ -23,16 +23,17 @@ type bot struct {
 	chatID int64
 	echotron.API
 	storage storage.Storage
-	logger  *log.Logger
 }
 
-func NewDispatcher(token string, storage storage.Storage, logger *log.Logger) *echotron.Dispatcher {
+func NewDispatcher(token string, storage storage.Storage) *echotron.Dispatcher {
+	if token == "" {
+		logger.Logger.Fatal("telegram token does not exist")
+	}
 	newBotFn := func(chatID int64) echotron.Bot {
 		return &bot{
 			chatID,
 			echotron.NewAPI(token),
 			storage,
-			logger,
 		}
 	}
 	return echotron.NewDispatcher(token, newBotFn)
