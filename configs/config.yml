@@ -2,4 +2,9 @@ reminder:
   waitInDays: 3
   runHour: 18
   
-restartDurationSeconds: 5
+dbPath: "data/db/share_bot.db"
+reminderFrequency: "1h"
+sslCertPath: "data/certs/cert.pem"
+debugLevel: "debug"
+mode: "webhook"
+serverUrl: ""

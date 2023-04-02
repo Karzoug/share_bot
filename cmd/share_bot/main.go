@@ -10,7 +10,6 @@ import (
 	"share_bot/internal/remind"
 	"share_bot/internal/storage/db"
 	"share_bot/pkg/scheduler"
-	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"go.uber.org/zap"
@@ -18,17 +17,15 @@ import (
 
 var (
 	configPath string
-	debugLevel string
 )
 
 const (
-	dbPath            string        = "data/db/share_bot.db"
-	reminderFrequency time.Duration = time.Hour
+	webhookMode string = "webhook"
+	poolMode    string = "pool"
 )
 
 func init() {
 	flag.StringVar(&configPath, "config-path", "configs/config.yml", "path to config file")
-	flag.StringVar(&debugLevel, "debug-level", "debug", "a debug level is a logging priority, there are debug, info, warn, error, dpanic, panic, fatal levels")
 }
 
 func main() {
@@ -40,9 +37,9 @@ func main() {
 	}
 
 	ctx := context.Background()
-	logger.InitializeLogger(debugLevel)
+	logger.InitializeLogger(cfg.DebugLevel)
 
-	storage, close := db.New(dbPath)
+	storage, close := db.New(cfg.DbPath)
 	defer close()
 
 	worker := scheduler.NewScheduler()
@@ -50,12 +47,13 @@ func main() {
 	reminder := remind.New(cfg.Token, storage, cfg.Reminder)
 	worker.Add(ctx, func(ctx context.Context) {
 		reminder.Work(ctx)
-	}, reminderFrequency)
+	}, cfg.ReminderFrequency)
 	defer worker.Stop()
 
-	for {
-		dsp := bot.NewDispatcher(cfg.Token, storage)
-		logger.Logger.Error("dispatcher poll error", zap.Error(dsp.Poll()))
-		time.Sleep(time.Duration(cfg.RestartDurationSeconds))
+	dsp := bot.NewDispatcher(cfg.Token, storage)
+	if cfg.Mode == webhookMode {
+		logger.Logger.Error("webhook listening error", zap.Error(dsp.ListenWebhook(cfg.ServerUrl, cfg.SSLCertPath)))
+	} else {
+		logger.Logger.Error("long poll listening error", zap.Error(dsp.Poll()))
 	}
 }
