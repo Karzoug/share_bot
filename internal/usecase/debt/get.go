@@ -28,9 +28,9 @@ func (s Service) GetUserDebts(ctx context.Context, username string, chat model.C
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	getDebtMsg := func(debt model.Debt) string {
+	getDebtMsg := func(authorUsername string, debt model.Debt) string {
 		msg := fmt.Sprintf("@%s \n%s: %d ₽ %s \n",
-			debt.DebtorUsername,
+			authorUsername,
 			debt.Date.Format("02.01.06"),
 			debt.Sum,
 			debt.Comment)
@@ -46,7 +46,12 @@ func (s Service) GetUserDebts(ctx context.Context, username string, chat model.C
 		defer cancel()
 
 		for i := range debts {
-			_, err := s.api.SendMessage(ctx, getDebtMsg(model.Debt(debts[i])), chat.ID, apiModel.InlineKeyboardMarkup{
+			author, err := s.userRepo.GetByID(ctx, debts[i].AuthorID)
+			if err != nil {
+				s.logger.Error("error", zap.String("error message", err.Error()))
+			}
+
+			_, err = s.api.SendMessage(ctx, getDebtMsg(author.Username, debts[i]), chat.ID, apiModel.InlineKeyboardMarkup{
 				InlineKeyboard: [][]apiModel.InlineKeyboardButton{{{
 					Text:         s.t.Get(debtReturnedRequestButtonMsg),
 					CallbackData: fmt.Sprintf("debt_returned_request:%s:%s", debts[i].RequestID, debts[i].DebtorUsername),
