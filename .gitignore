@@ -1,2 +1,32 @@
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories
+vendor/
+
+# IDEs directories
+.idea
+.vscode
+
+# MacOS hidden directories
+.DS_Store
+
+# env files
+*.env
+
+# binaries
 /share_bot
+*.exe
+
+# log files
 *.log
+
+# certificate
+*.key
+*.crt
+
+# database files
+*.db
