@@ -10,5 +10,4 @@ type Debt struct {
 	Comment        string
 	Date           time.Time
 	Confirmed      bool
-	//Returned       bool
 }

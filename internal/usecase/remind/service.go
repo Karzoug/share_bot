@@ -4,16 +4,13 @@ import (
 	"context"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/vorlif/spreak"
+	"go.uber.org/zap"
 
 	"github.com/Karzoug/share_bot/internal/api"
 	rrepo "github.com/Karzoug/share_bot/internal/usecase/remind/repo"
 	urepo "github.com/Karzoug/share_bot/internal/usecase/user/repo"
 )
-
-var defaultBackgroundTaskTimeout = 3 * time.Second
 
 type Service struct {
 	cfg        Config
